@@ -59,17 +59,17 @@ summary(srcm)
 data_line = data.frame(x=c(0,3300), y=c(0,3300))
 
 ggplot() +
-  geom_point(data=cbind(rides, regression_estimate = srcm$fitted.values), aes(x=strava_estimated_calories, y=regression_estimate, size=distance, alpha=0.8, shape=device)) + 
+  geom_point(data=cbind(rides, regression_estimate = srcm$fitted.values), aes(x=strava_estimated_calories, y=regression_estimate, size=distance, alpha=0.8, color=device)) + 
   ggtitle('Strava Calorie Estimate vs. Regression Model Estimate',
           subtitle=bquote(paste("R"^"2","=0.90"))) + xlab('Strava Calories Estimate') + ylab("Regression Calories Estimate") + 
   theme_bw() + 
-  geom_line(data=data_line, aes(x=x, y=y, color="red",alpha=0.8)) + 
-  scale_color_identity() + scale_alpha_identity() + 
+  geom_line(data=data_line, aes(x=x, y=y,alpha=0.8)) + 
+  scale_alpha_identity() + 
   scale_x_continuous(breaks=seq(0,3500,200)) + scale_y_continuous(breaks=seq(0,3000,200)) +
   theme(plot.title = element_text(hjust=0.5),
         plot.subtitle = element_text(hjust=0.5)) + 
   guides(size=guide_legend('Distance (miles)'),
-         shape=guide_legend("Recording Device"))
+         color=guide_legend("Recording Device"))
 
 
 #using device
@@ -107,17 +107,17 @@ srcmi = step(ride_cal_model_interactions, direction='both', k=log(76))
 summary(srcmi)
 
 ggplot() +
-  geom_point(data=cbind(rides, regression_estimate = srcmi$fitted.values), aes(x=strava_estimated_calories, y=regression_estimate, size=distance, alpha=0.8, shape=device)) + 
+  geom_point(data=cbind(rides, regression_estimate = srcmi$fitted.values), aes(x=strava_estimated_calories, y=regression_estimate, size=distance, alpha=0.8, color=device)) + 
   ggtitle('Strava Calorie Estimate vs. Regression Model Estimate', 
           subtitle=bquote(paste("Using GPS device as variable with interaction effects | R"^"2","=0.96"))) + xlab('Strava Calories Estimate') + ylab("Regression Calories Estimate") + 
   theme_bw() + 
-  geom_line(data=data_line, aes(x=x, y=y, color="red",alpha=0.8)) + 
-  scale_color_identity() + scale_alpha_identity() + 
+  geom_line(data=data_line, aes(x=x, y=y,alpha=0.8)) + 
+  scale_alpha_identity() + 
   scale_x_continuous(breaks=seq(0,3500,200)) + scale_y_continuous(breaks=seq(0,3000,200)) +
   theme(plot.title = element_text(hjust=0.5),
         plot.subtitle = element_text(hjust=0.5)) + 
   guides(size=guide_legend('Distance (miles)'),
-         shape=guide_legend("Recording Device"))
+         color=guide_legend("Recording Device"))
 
 #HTML tables for models...
 sjt.lm(srcm, srcmd, srcmi,
@@ -134,17 +134,17 @@ dfr3 = cbind(rides, regression_estimate = srcmi$fitted.values) %>% mutate(model=
 
 dfr = rbind(dfr1, dfr2, dfr3)
 ggplot() +
-  geom_point(data=dfr, aes(x=strava_estimated_calories, y=regression_estimate, size=distance, alpha=0.8, shape=device)) + 
+  geom_point(data=dfr, aes(x=strava_estimated_calories, y=regression_estimate, size=distance, alpha=0.8, color=device)) + 
   ggtitle('Strava Calorie Estimate vs. Regression Model Estimate', 
           subtitle=bquote(paste("using 3 different regression models"))) + xlab('Strava Calories Estimate') + ylab("Regression Calories Estimate") + 
   theme_bw() + 
-  geom_line(data=data_line, aes(x=x, y=y, color="red",alpha=0.8)) + 
-  scale_color_identity() + scale_alpha_identity() + 
+  geom_line(data=data_line, aes(x=x, y=y,alpha=0.8)) + 
+  scale_alpha_identity() + 
   scale_x_continuous(breaks=seq(0,3500,500)) + scale_y_continuous(breaks=seq(0,3000,200)) +
   theme(plot.title = element_text(hjust=0.5),
         plot.subtitle = element_text(hjust=0.5)) + 
   guides(size=guide_legend('Distance (miles)'),
-         shape=guide_legend("Recording Device")) + 
+         color=guide_legend("Recording Device")) + 
   facet_grid(.~model)
 
 
@@ -227,7 +227,8 @@ ggplot(smooth_comparison, aes(x=time, y=speed_smooth, color=smooth, alpha=0.9)) 
   theme_bw() +
   theme(plot.title=element_text(hjust=0.5),
         plot.subtitle=element_text(hjust=0.5)) +
-  guides(color=guide_legend("Smoothing Used?"))
+  guides(color=guide_legend("Smoothing Used?")) + 
+  scale_color_manual(values=c('smoothing'="#66A61E",'w/o smoothing' ="#E6AB02"))
 
 
 ###utility functions 
