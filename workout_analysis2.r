@@ -23,6 +23,7 @@ workouts$distance = as.numeric(workouts$distance)
 workouts$date = as.POSIXct(workouts$date)
 workouts$time = as.POSIXct(workouts$time)
 workouts$filename = tolower(workouts$filename)
+workouts$filename = paste0(tolower(workouts$filename),'.gpx')
 
 
 convert_time_to_minutes <- function(x){
@@ -241,6 +242,8 @@ ftconv = 1609/5280
 #joules to Calories
 jtc = 0.000239006
 
+meters_to_feet = 3.28084
+
 combine_data <- function(data, C1=0, C2=0, C3=1, mass=80, returnEnergyCalcOnly=FALSE, use_timediff=FALSE){
   #C2 = rolling resistance coefficient (in watts/mph)
   #C3 = area * drag coefficient 
@@ -255,7 +258,7 @@ combine_data <- function(data, C1=0, C2=0, C3=1, mass=80, returnEnergyCalcOnly=F
                                   c(0,speed_smooth[1:(length(speed_smooth) -1)]^2))/2,
       #take into account elevation change
       PE_diff=0 + 
-        c(0,identity(elevation_change[2:length(elevation_change)] * 9.8 * ftconv)) * mass,
+        meters_to_feet*c(0,identity(elevation_change[2:length(elevation_change)] * 9.8 * ftconv)) * mass,
       #rolling resistance
       roll_resistance = 0 + C1 * (mphconv * speed_smooth[1:length(speed_smooth)]) * timediff,
       quad_resistance = 0 + C2 * (mphconv * speed_smooth[1:length(speed_smooth)])^2 * timediff,
@@ -287,7 +290,7 @@ combine_and_plot_data <- function(mass=70, C1, C3, smooth=0,optimizer=FALSE, use
                                 air_energy = sum(air_resistance) * jtc,
                                 roll_energy = sum(roll_resistance) * jtc)
   #join with cal info
-  nd_summary = nd_summary %>% left_join(workouts2 %>% transmute(source=gsub('.gpx','.csv',filename), calories = strava_estimated_calories,
+  nd_summary = nd_summary %>% left_join(workouts %>% transmute(source=gsub('.gpx','.csv',filename), calories = strava_estimated_calories,
                                                                 device=device, distance=distance),
                                         'source')
   if (!optimizer){
@@ -315,7 +318,7 @@ optim_fn <- function(x){
 #optimizer
 optim(par=list(C1=5,C3=0.1), optim_fn, control=list(fnscale=-1, trace=2), lower=0.09, upper=12)
   
-td = combine_and_plot_data(mass=80,C1=8.488, C3=0.09, smooth=10, use_timediff=TRUE)
+td = combine_and_plot_data(mass=82,C1=6.7537, C3=0.09, smooth=10, use_timediff=TRUE)
 
 ggplot() + geom_point(data=td, aes(x=calories, y=total_energy/0.21, color=device,size=distance)) +
   geom_line(data=data_line, aes(x=x,y=y,fill='red')) + 
@@ -323,25 +326,25 @@ ggplot() + geom_point(data=td, aes(x=calories, y=total_energy/0.21, color=device
   theme(plot.title=element_text(hjust=0.5),
         plot.subtitle=element_text(hjust=0.5)) +
   ggtitle("Strava Calorie Estimate vs. Optimized Calculation",
-          subtitle=bquote(paste("coefficients: drag = 0.09*v"^3, "(m/s) W | rolling resistance = 8.488 * v (m/s) W | model R"^2,"=0.82"))) + 
+          subtitle=bquote(paste("coefficients: drag = 0.09*v"^3, "(m/s) W | rolling resistance = 6.754 * v (m/s) W | model R"^2,"=0.83"))) + 
   xlab("Strava Calories Estimate") + ylab("Calculation Calories")
 
 
 #more realistic coefficients:
 
-tdr = combine_and_plot_data(mass=80,C1=3, C3=0.2, smooth=10, use_timediff=TRUE)
+tdr = combine_and_plot_data(mass=82,C1=3, C3=0.2, smooth=10, use_timediff=TRUE)
 ggplot() + geom_point(data=tdr, aes(x=calories, y=total_energy/0.21, color=device,size=distance)) +
   geom_line(data=data_line, aes(x=x,y=y,fill='red')) + 
   scale_fill_identity() + theme_bw() +
   theme(plot.title=element_text(hjust=0.5),
         plot.subtitle=element_text(hjust=0.5)) +
   ggtitle("Strava Calorie Estimate vs. Realistic Calculation",
-          subtitle=bquote(paste("coefficients: drag = 0.2*v"^3, "(m/s) W | rolling resistance = 3.0 * v (m/s) W | model R"^2,"=0.77"))) + 
+          subtitle=bquote(paste("coefficients: drag = 0.2*v"^3, "(m/s) W | rolling resistance = 3.0 * v (m/s) W | model R"^2,"=0.73"))) + 
   xlab("Strava Calories Estimate") + ylab("Calculation Calories")
 
 #separate categories and plot their relative effects
 
-ttd = td %>% transmute(source=source, device=device, air_percent = air_energy/total_energy, roll_percent = roll_energy/total_energy)
+ttd = td %>% transmute(source=source, device=device, air_percent = air_energy/pmax(total_energy, air_energy), roll_percent = roll_energy/pmax(roll_energy, total_energy))
 molten_td = melt(ttd, id.vars=(c('source','device'))) %>% mutate(calculation='optimized calculation')
 
 ttdr = tdr %>% transmute(source=source, device=device, air_percent = air_energy/total_energy, roll_percent = roll_energy/total_energy)
